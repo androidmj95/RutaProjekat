@@ -1,12 +1,14 @@
 package com.example.jelenam.rutaprojekat;
 
+import android.graphics.Color;
 import android.os.AsyncTask;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -46,74 +48,111 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         listPoints = new ArrayList<>();
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
+
+        /**
+         * Manipulates the map once available.
+         * This callback is triggered when the map is ready to be used.
+         * This is where we can add markers or lines, add listeners or move the camera. In this case,
+         * we just add a marker near Sydney, Australia.
+         * If Google Play services is not installed on the device, the user will be prompted to install
+         * it inside the SupportMapFragment. This method will only be triggered once the user has
+         * installed Google Play services and returned to the app.
+         */
+
+        @Override
+        public void onMapReady(GoogleMap googleMap) {
+
+            mMap = googleMap;
+            LatLng Beograd = new LatLng(44.7866, 20.4489);
+            final MarkerOptions markerOptions = new MarkerOptions();
+            markerOptions.position(Beograd);
+            // mMap.addMarker(markerOptions);
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(Beograd, 15));
+
+            mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+                @Override
+                public void onMapClick(LatLng latLng) {
+
+                    if (listPoints.size() >= 10) {
+                        mMap.clear();
+                        listPoints.clear();
+                    }
+
+                    listPoints.add(latLng);
+
+                    MarkerOptions markerOptions1 = new MarkerOptions();
+                    markerOptions1.position(latLng);
+
+                    if (listPoints.size() == 1) {
+                        markerOptions1
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET));
+                    } else if (listPoints.size() == 2) {
+                        markerOptions1
+                                .alpha(0.7f)
+                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET));
+                    } else {
+                        markerOptions1.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+
+                    }
+
+                    mMap.addMarker(markerOptions1);
 
 
-        LatLng Beograd = new LatLng(42.73, 25.48);
-        final MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.position(Beograd);
-        // mMap.addMarker(markerOptions);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(Beograd,15));
-
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(LatLng latLng) {
-
-                if (listPoints.size() == 2) {
-                    mMap.clear();
-                    listPoints.clear();
                 }
+            });
 
-                listPoints.add(latLng);
+        /* if (listPoints.size()==2){
 
-                MarkerOptions markerOptions1 = new MarkerOptions();
-                markerOptions.position(latLng);
+            String url = getRequestUrl(listPoints.get(0), listPoints.get(1));
+            TaskRequestDirections taskRequestDirections = new TaskRequestDirections();
+            taskRequestDirections.execute(url);
+        }
+        */
 
-                if (listPoints.size() == 1) {
-                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
-                } else {
-                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
+            mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+                @Override
+                public void onMapLongClick(LatLng latLng) {
 
+                    if (listPoints.size() >= 2) {
+
+                        LatLng origin = listPoints.get(0);
+                        LatLng dest = listPoints.get(1);
+
+                        String url = getRequestUrl(origin, dest);
+                        TaskRequestDirections taskRequestDirections = new TaskRequestDirections();
+                        taskRequestDirections.execute(url);
+
+                    }
                 }
-
-                mMap.addMarker(markerOptions);
-
-                if (listPoints.size() == 2) {
-
-                    String url = getRequestUrl(listPoints.get(0), listPoints.get(1));
-                    TaskRequestDirections taskRequestDirections = new TaskRequestDirections();
-                    taskRequestDirections.execute(url);
-                }
-
-            }
-        });
+            });
 
 
-    }
+        }
 
     private String getRequestUrl(LatLng origin, LatLng dest) {
+
 
         String str_org = "origin=" + origin.latitude + "," + origin.longitude;
         String str_dest = "destination=" + dest.latitude + "," + dest.longitude;
         String sensor = "sensor-false";
+
+        String waypoints = "";
+        for (int i = 2; i < listPoints.size(); i++){
+            LatLng point = (LatLng) listPoints.get(i);
+
+            if( i == 2){
+                waypoints = "waypoints=";
+            }
+
+            waypoints += point.latitude + "," + point.longitude + "|";
+        }
+
         String mode = "mode=driving";
         String key = "key=AIzaSyDtSYZzE4kdtNUFTDIVhG7B-3oj42nQLLw";
-        String param = str_org + "&" + str_dest + "&" + mode + "&" + key;
+        String param = str_org+"&"+str_dest+ "&" + waypoints + "&"+mode+"&"+key;
         String output = "json";
-        String url = "https://maps.googleapis.com/maps/api/directions/" + output + "?" + param;
+        String url = "https://maps.googleapis.com/maps/api/directions/"+output+"?"+param;
         return url;
-
     }
 
 
@@ -156,7 +195,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
-    public class TaskRequestDirections extends AsyncTask<String, Void, String> {
+
+
+public class TaskRequestDirections extends AsyncTask<String, Void, String> {
 
         @Override
         protected String doInBackground(String... strings) {
@@ -217,7 +258,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
 
                 polylineOptions.addAll(points);
-                polylineOptions.geodesic(true);
+                polylineOptions
+                        .color(Color.RED)
+                        .geodesic(true);
             }
 
             if (polylineOptions != null) {
